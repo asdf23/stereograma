@@ -10,7 +10,11 @@ visit that link: https://kapandaria.wordpress.com/stereograma/
 ### How to build:
 
 Since it was developed with QtCreator, you can generate a makefile from the .pro file with qmake, or just compile it from within the IDE.
+
+```
 make && qmake
+/stereograma <depth file> <noise file> <output file>
+```
 
 Forked from https://github.com/gnudles/stereograma.git adds cli
 
