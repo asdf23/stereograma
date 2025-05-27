@@ -2,6 +2,8 @@
 #include "stereomaker.h"
 #include <QPainter>
 #include <QElapsedTimer>
+#include <QLoggingCategory>
+
 
 
 QVector<QRgb> StereoMaker::grayscale;
@@ -94,9 +96,23 @@ void scaleLine(uchar* big,const uchar* original,int sizeoriginal)
 
 QImage StereoMaker::render(const QImage & map, const QImage & ptrn, Preset *psettings, QProgressBar * qpbar, const QImage * eye_helper_right, const QImage * eye_helper_left, bool show_helper, bool helpers_margin)
 {
-    qpbar->setMinimum(0);
-    qpbar->setMaximum(10);
-    qpbar->setValue(0);
+    if(qpbar)
+    {
+        qpbar->setMinimum(0);
+        qpbar->setMaximum(10);
+        qpbar->setValue(0);
+    }
+//QT_ASSUME_STDERR_HAS_CONSOLE=1
+qDebug() << "2 ---- Render Settings ----";
+qDebug() << "2 DPI:" << psettings->getDotsPerInch();
+qDebug() << "2 Observer Distance:" << psettings->getObserverDistance();
+qDebug() << "2 Eye Separation:" << psettings->getEyeSeperation();
+qDebug() << "2 Max Depth:" << psettings->getMaximumDepth();
+qDebug() << "2 Min Depth:" << psettings->getMinimumDepth();
+qDebug() << "2 Parallel Mode:" << (psettings->getIsParallel() ? "Yes" : "No");
+qDebug() << "2 Depth Map Size:" << map.size();
+qDebug() << "2 Pattern Size:" << ptrn.size();
+
     int width = map.width();
     int height = map.height();
 
@@ -129,11 +145,21 @@ QImage StereoMaker::render(const QImage & map, const QImage & ptrn, Preset *pset
     QImage::Format out_format = pattern.format();
     if (show_helper && helpers_margin)
     {
-        if (eye_helper_left==0)
-            rh=15*psettings->getDotsPerInch()/72;
+        if(eye_helper_left) 
+        {
+            if (eye_helper_left==0) 
+            {
+                rh=15*psettings->getDotsPerInch()/72;
+            }
+            else
+            {
+                rh=eye_helper_left->height();
+            }
+        }
         else
         {
-            rh=eye_helper_left->height();
+            //cli
+            rh=15*psettings->getDotsPerInch()/72;
         }
         rh=rh*3/2;
         out_format=QImage::Format_ARGB32;
@@ -265,7 +291,10 @@ QImage StereoMaker::render(const QImage & map, const QImage & ptrn, Preset *pset
         if (progbarval!=10*y/(height-1))
         {
             progbarval=10*y/(height-1);
-            qpbar->setValue(progbarval);
+            if(qpbar)
+            {
+                qpbar->setValue(progbarval);
+            }
         }
     }
     qDebug("Time elapsed: %lld ms", t_time.elapsed());
@@ -277,10 +306,18 @@ QImage StereoMaker::render(const QImage & map, const QImage & ptrn, Preset *pset
     {
         QPainter painter(&result);
         int rw;
-        if (eye_helper_left==0)
-            rw=15*psettings->getDotsPerInch()/72;
+        if(eye_helper_left) 
+        {
+            if (eye_helper_left==0)
+                rw=15*psettings->getDotsPerInch()/72;
+            else
+                rw=eye_helper_left->width();
+        }
         else
-            rw=eye_helper_left->width();
+        {
+            //cli
+            rw=15*psettings->getDotsPerInch()/72;
+        }
         int rect_sep;
         if(!psettings->getIsParallel())
         {
@@ -294,13 +331,29 @@ QImage StereoMaker::render(const QImage & map, const QImage & ptrn, Preset *pset
         {
             rh = 30;
         }
-        if (eye_helper_left != 0 && eye_helper_right != 0)
+        if(eye_helper_left) 
         {
-            painter.drawImage(QPoint(result.width()/2-rect_sep/2-rw/2,rh/6),*eye_helper_left);
-            painter.drawImage(QPoint(result.width()/2+rect_sep/2-rw/2,rh/6),*eye_helper_right);
+            if (eye_helper_left != 0 && eye_helper_right != 0)
+            {
+                painter.drawImage(QPoint(result.width()/2-rect_sep/2-rw/2,rh/6),*eye_helper_left);
+                painter.drawImage(QPoint(result.width()/2+rect_sep/2-rw/2,rh/6),*eye_helper_right);
+            }
+            else
+            {
+                painter.setPen(QPen(QColor(255,255,255,128)));
+                painter.drawRect( result.width()/2-rect_sep/2-rw/2, rh/6, rw, rw );
+                painter.drawRect( result.width()/2+rect_sep/2-rw/2, rh/6, rw, rw );
+                painter.setPen(QPen(QColor(0,0,0,128)));
+                painter.drawRect( result.width()/2-rect_sep/2-rw/2+1, rh/6+1, rw-2, rw-2 );
+                painter.drawRect( result.width()/2+rect_sep/2-rw/2+1, rh/6+1, rw-2, rw-2 );
+
+                painter.fillRect( result.width()/2-rect_sep/2-rw/2+2, rh/6+2, rw-3, rw-3 ,QColor(255,255,255,60));
+                painter.fillRect( result.width()/2+rect_sep/2-rw/2+2, rh/6+2, rw-3, rw-3 ,QColor(255,255,255,60));
+            }
         }
         else
         {
+            //cli
             painter.setPen(QPen(QColor(255,255,255,128)));
             painter.drawRect( result.width()/2-rect_sep/2-rw/2, rh/6, rw, rw );
             painter.drawRect( result.width()/2+rect_sep/2-rw/2, rh/6, rw, rw );
@@ -312,5 +365,17 @@ QImage StereoMaker::render(const QImage & map, const QImage & ptrn, Preset *pset
             painter.fillRect( result.width()/2+rect_sep/2-rw/2+2, rh/6+2, rw-3, rw-3 ,QColor(255,255,255,60));
         }
     }
+
+qDebug() << "---- Render Settings ----";
+qDebug() << "DPI:" << psettings->getDotsPerInch();
+qDebug() << "Observer Distance:" << psettings->getObserverDistance();
+qDebug() << "Eye Separation:" << psettings->getEyeSeperation();
+qDebug() << "Max Depth:" << psettings->getMaximumDepth();
+qDebug() << "Min Depth:" << psettings->getMinimumDepth();
+qDebug() << "Parallel Mode:" << (psettings->getIsParallel() ? "Yes" : "No");
+qDebug() << "Depth Map Size:" << map.size();
+qDebug() << "Pattern Size:" << ptrn.size();
+
+
     return result;
 }
