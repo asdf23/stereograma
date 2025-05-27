@@ -5,7 +5,7 @@ There is also an interface for combining two pictures taken from different angle
 
 ### Where to download?
 
-visit that link: https://kapandaria.wordpress.com/stereograma/
+Right here, build it yourself
 
 ### How to build:
 
