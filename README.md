@@ -13,7 +13,7 @@ Since it was developed with QtCreator, you can generate a makefile from the .pro
 
 ```
 make && qmake
-/stereograma <depth file> <noise file> <output file>
+./stereograma <depth file> <noise file> <output file>
 ```
 
 Forked from https://github.com/gnudles/stereograma.git adds cli
